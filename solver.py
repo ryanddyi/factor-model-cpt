@@ -37,7 +37,7 @@ class FactorModel():
 
 
     def cpt_config(self, subsetting=False, minseglen=5, cpt_set=None):
-        # specify change-point candidate set
+        # specify change-point candidate set.
         self.subsetting = subsetting
         if subsetting:
             self.cpt_set = cpt_set
@@ -46,8 +46,9 @@ class FactorModel():
 
 
     def param_init(self):
-        # parameters: Beta, Lambda2, k_plus, tau, lambda2_0
+        # parameters: Beta, Lambda2, k_plus, tau, lambda2_0.
         self.Beta = np.random.randn(self.n_name, self.k_max)
+        #self.Beta = np.loadtxt(open("/tmp/Beta_init.csv", "rb"), delimiter=",") # for debug, delete later
         self.sigma2 = np.ones(self.n_name)
 
         self.Lambda2 = []
@@ -58,6 +59,7 @@ class FactorModel():
 
 
     def delta0_reconfig(self, delta0):
+        # gradually increase delta0 during optimization.
         self.delta[0] = delta0
 
 
@@ -91,7 +93,7 @@ class FactorModel():
             M_sum = M_sum + (tau[j+1] - tau[j])*M[j]
 
             for t in range(tau[j],tau[j+1]):
-                E_F[t,:] = M[j].dot(Beta.transpose()).dot(Sigma_inv).dot(y_mat[t,:])
+                E_F[t,:] = M[j].dot(Beta.transpose()).dot(Sigma_inv).dot(self.y_mat[t,:])
                 E_F2[t,:]=E_F[t,:]**2 + np.diag(M[j])
 
         M_u = scipy.linalg.sqrtm(M_sum)
@@ -148,7 +150,6 @@ class FactorModel():
         self.tau = cpt_m
         self.k_plus = k_plus
         self.Lambda2 = Lambda2
-        print(self.tau)
 
 
     def _m_step_q2(self, E_F, M_u, M_sum, E_Gamma, PXL=False):
@@ -192,9 +193,12 @@ class FactorModel():
 
         order = np.argsort(abs(Beta).sum(axis=0))[::-1]
         Beta = Beta[:,order]
+        self.Beta = Beta
 
         for j in range(len(self.tau)-1):
             self.Lambda2[j] = self.Lambda2[j][order]
+        #print(self.Beta[0])
+        #print(self.Lambda2)
 
 
     def em_iterator(self, nstep, PXL):
@@ -210,8 +214,6 @@ class FactorModel():
             self._m_step_q2(E_F, M_u, M_sum, E_Gamma, PXL)
             #print((self.Beta-Beta_old).max())
             if i > nstep/5 and (self.Beta-Beta_old).max()<0.0001:
-                print(Q1_list)
-                print(k_plus)
                 break
 
     def log_likelihood(self):
@@ -239,7 +241,7 @@ class FactorModel():
             loglik = loglik - sum(eta*s2_lambda/Lambda2[j][0:k_plus] + (eta+2)*np.log(Lambda2[j][0:k_plus]))/2
             Sigma_t.append(Beta.dot(np.diag(Lambda2[j])).dot(Beta.transpose()) + np.diag(sigma2))
             for t in range(tau[j],tau[j+1]):
-                loglik = loglik + scipy.stats.multivariate_normal.logpdf(y_mat[t,:],np.zeros(n_name), Sigma_t[j])
+                loglik = loglik + scipy.stats.multivariate_normal.logpdf(self.y_mat[t,:],np.zeros(n_name), Sigma_t[j])
 
         loglik = loglik + (np.log(theta1*delta0*np.exp(-delta0*abs(Beta[:,0:k_plus])) + 
                                   (1-theta1)*delta1*np.exp(-delta1*abs(Beta[:,0:k_plus])))).sum()
@@ -258,7 +260,7 @@ def data_toy_simulation():
     block_size = 30
     overlap_size = 5
     n_name = overlap_size+(block_size-overlap_size)*n_factor
-    sd_idio = 0.1
+    sd_idio = 1
 
     # B_0
     B_mat =  np.zeros((n_name,n_factor))
@@ -269,7 +271,7 @@ def data_toy_simulation():
     n_segment = 4
     tau_true = [0, 50, 80, 100, 150]
     n_date = 150
-    lambda_0 = [10,1,10,1]
+    lambda_0 = [4,1,3,1]
 
     # generate factors with change-points
     f_mat = np.ndarray((n_date, n_factor))
@@ -294,12 +296,14 @@ def normalize(y_mat):
 
 if __name__ == "__main__":
     y_mat = data_toy_simulation()
+    #y_mat = np.loadtxt(open("/tmp/y_mat.csv", "rb"), delimiter=",")
     y_mat = normalize(y_mat)
 
     model = FactorModel(y_mat, k_max=10)
 
     model.cpt_config()
     model.param_init()
+
     model.em_iterator(200, True)
     print(model.k_plus)
     print(model.Beta[:,:model.k_plus])

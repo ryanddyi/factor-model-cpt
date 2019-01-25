@@ -60,6 +60,8 @@ def EM_iterate(PXL, subsetting):
             Q1 = Q1 - cpt.cost_function(eta, s2_lambda, E_F2[cpt_m[j]:cpt_m[j+1],:], k_star)
         Q1_list.append(Q1)
 
+    print(Q1_list)
+
     k_plus = np.argmax(Q1_list)+1
 
     lambda2_m = []
@@ -73,6 +75,8 @@ def EM_iterate(PXL, subsetting):
     for j in range(len(cpt_m)-1):
         Lambda2.append(np.append(lambda2_m[j],lambda2_0*np.ones(k_max-k_plus)))
 
+    print(cpt_m)
+    print(Lambda2)
     tau = cpt_m
 
     ## maximize Q2(B,Sigma)
@@ -109,6 +113,8 @@ def EM_iterate(PXL, subsetting):
     Beta = Beta[:,order]
     for j in range(len(cpt_m)-1):
         Lambda2[j] = Lambda2[j][order]    
+    print(Beta[0])
+    print(Lambda2)
     return
 
 # log-likelihood
@@ -174,6 +180,7 @@ y_mat = f_mat.dot(B_mat.transpose()) + np.random.randn(n_date,n_name)*sd_idio
 #covmat_true = B_mat.dot(B_mat.transpose())+np.diag(np.ones(n_name))*sd_idio**2
 
 np.savetxt("/tmp/Beta_true.csv", B_mat, delimiter=",")
+np.savetxt("/tmp/y_mat.csv", y_mat, delimiter=",")
 
 
 # In[193]:
@@ -209,6 +216,7 @@ k_max = 10
 k_plus = 1
 
 Beta = np.random.randn(n_name,k_max)*10
+np.savetxt("/tmp/Beta_init.csv", Beta, delimiter=",")
 sigma2 = np.ones(n_name) # diagonal of Sigma
 
 E_F = np.ndarray(shape = (n_date,k_max))
@@ -238,9 +246,7 @@ for i in range(200):
     EM_iterate(True, subsetting)    
     if (i+1)%50 == 0:
         log_like.append(log_likelihood(subsetting))
-        print(log_like[-1])
-    print(k_plus)
-    print(tau)
+        #print(log_like[-1])
     if i>50 and abs(Beta-Beta_old).max()<0.001:
         break
     
