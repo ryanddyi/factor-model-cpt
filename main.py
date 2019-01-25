@@ -6,12 +6,10 @@ import scipy
 import scipy.linalg
 import scipy.stats
 import math
-import matplotlib.pyplot as plt
 import sklearn
 from sklearn import linear_model
 import pandas as pd
 import random
-get_ipython().magic('matplotlib inline')
 
 
 import cpt_functions as cpt
@@ -175,13 +173,13 @@ y_mat = f_mat.dot(B_mat.transpose()) + np.random.randn(n_date,n_name)*sd_idio
 # static covariance matrix
 #covmat_true = B_mat.dot(B_mat.transpose())+np.diag(np.ones(n_name))*sd_idio**2
 
-np.savetxt("/Users/ydd/Documents/covariance/output/simulation/Beta_true.csv", B_mat, delimiter=",")
+np.savetxt("/tmp/Beta_true.csv", B_mat, delimiter=",")
 
 
 # In[193]:
 
 
-plt.plot(f_mat)
+#plt.plot(f_mat)
 
 
 # In[194]:
@@ -191,8 +189,7 @@ f2_mat = f_mat**2
 eta=1
 s2=1
 k_plus=n_factor
-cpt_set = range(n_date+1)
-cpt.cpt_detect_minseglen_PELT(eta, s2, f2_mat, k_plus, 10)
+print(cpt.cpt_detect_minseglen_PELT(eta, s2, f2_mat, k_plus, 10))
 #cpt.cpt_detect_PELT(eta, s2, f2_mat, k_plus, cpt_set)
 #cpt.cpt_detect_PELT(eta, s2, f2_mat, k_plus, cpt_set)
 
@@ -241,6 +238,9 @@ for i in range(200):
     EM_iterate(True, subsetting)    
     if (i+1)%50 == 0:
         log_like.append(log_likelihood(subsetting))
+        print(log_like[-1])
+    print(k_plus)
+    print(tau)
     if i>50 and abs(Beta-Beta_old).max()<0.001:
         break
     
@@ -249,6 +249,9 @@ for i in range(1000):
     EM_iterate(False, subsetting)
     if (i+1)%10 == 0:
         log_like.append(log_likelihood(subsetting))
+        print(log_like[-1])
+    print(k_plus)
+    print(tau)
     if i>200 and abs(Beta-Beta_old).max()<0.001:
         break
 
@@ -317,7 +320,7 @@ Beta = Beta*np.sqrt(lambda2_mean)
 
 # In[196]:
 
-
+"""
 plt.plot(Lambda_ts)
 
 
@@ -510,7 +513,6 @@ Lambda_ts = Lambda_ts/lambda2_mean
 Beta = Beta*np.sqrt(lambda2_mean)
 
 
-
 # In[ ]:
 
 
@@ -575,4 +577,5 @@ plt.plot(Lambda_ts[:,0])
 cpt_set = 5*np.array(range(int(n_date/5)+1))
 cpt_set = np.append(cpt_set,n_date)
 
+"""
 

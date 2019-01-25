@@ -3,7 +3,6 @@ import scipy
 import scipy.linalg
 import scipy.stats
 import math
-import matplotlib.pyplot as plt
 import sklearn
 from sklearn import linear_model
 import pandas as pd
