@@ -8,6 +8,7 @@ import sklearn
 from sklearn import linear_model
 import cpt_functions as cpt
 import copy
+import utils
 
 # idea on refactoring this piece of code
 # a class centered around y_mat
@@ -40,6 +41,9 @@ class FactorModel():
         # specify change-point candidate set.
         self.subsetting = subsetting
         if subsetting:
+            if not cpt_set:
+                cpt_set = minseglen*np.array(range(int((self.n_date-1)/minseglen)+1))
+                cpt_set = np.append(cpt_set, self.n_date)
             self.cpt_set = cpt_set
         else:
             self.minseglen = minseglen
@@ -47,7 +51,7 @@ class FactorModel():
 
     def param_init(self):
         # parameters: Beta, Lambda2, k_plus, tau, lambda2_0.
-        self.Beta = np.random.randn(self.n_name, self.k_max)
+        self.Beta = np.random.randn(self.n_name, self.k_max)*10
         #self.Beta = np.loadtxt(open("/tmp/Beta_init.csv", "rb"), delimiter=",") # for debug, delete later
         self.sigma2 = np.ones(self.n_name)
 
@@ -56,6 +60,7 @@ class FactorModel():
 
         self.tau = [0, self.n_date]
         self.k_plus = self.k_max
+        self.lambda2_0 = 1
 
 
     def delta0_reconfig(self, delta0):
@@ -67,8 +72,8 @@ class FactorModel():
         """
         conditional expectation: sufficient statistics of gamma
         """
-        Theta_rep = self.theta[0] * np.ones((self.n_name, self.k_max))
-        Theta_rep[:,:self.k_plus] = self.theta[1]
+        Theta_rep = self.theta[1] * np.ones((self.n_name, self.k_max))
+        #Theta_rep[:,:self.k_plus] = self.theta[1]
         tmp = np.exp(-abs(self.Beta)*(self.delta[0]-self.delta[1]))
         ratio = self.delta[0]/self.delta[1]*(1-Theta_rep)/Theta_rep*tmp
         E_Gamma = 1/(1+ratio)
@@ -150,6 +155,7 @@ class FactorModel():
         self.tau = cpt_m
         self.k_plus = k_plus
         self.Lambda2 = Lambda2
+        self.lambda2_0 = lambda2_0
 
 
     def _m_step_q2(self, E_F, M_u, M_sum, E_Gamma, PXL=False):
@@ -212,9 +218,9 @@ class FactorModel():
             E_F, E_F2, M_u, M_sum = self._e_step_f()
             self._m_step_q1(E_F2, E_Gamma)
             self._m_step_q2(E_F, M_u, M_sum, E_Gamma, PXL)
-            #print((self.Beta-Beta_old).max())
             if i > nstep/5 and (self.Beta-Beta_old).max()<0.0001:
                 break
+
 
     def log_likelihood(self):
         """ Evaluate likelihood"""
@@ -225,6 +231,8 @@ class FactorModel():
         k_plus = self.k_plus
         tau = self.tau
         lambda2_0 = self.lambda2_0
+        delta = self.delta
+        theta = self.theta
 
         if self.subsetting:
             loglik = -0.5*(len(tau)-1)*k_plus*np.log(len(self.cpt_set)-1)
@@ -232,22 +240,22 @@ class FactorModel():
             loglik = -0.5*(len(tau)-1)*k_plus*np.log(self.n_date)
 
         if k_max > k_plus:
-            loglik = loglik - (eta*s2_lambda/lambda2_0 + (eta+2)*np.log(lambda2_0))/2
+            loglik -= (self.eta*self.s2_lambda/lambda2_0 + (self.eta+2)*np.log(lambda2_0))/2
 
-        loglik = loglik - sum(xi*s2_sigma/sigma2 + (xi+2)*np.log(sigma2))/2
+        loglik -= sum(self.xi*self.s2_sigma/sigma2 + (self.xi+2)*np.log(sigma2))/2
 
         Sigma_t = []
         for j in range(len(tau)-1):
-            loglik = loglik - sum(eta*s2_lambda/Lambda2[j][0:k_plus] + (eta+2)*np.log(Lambda2[j][0:k_plus]))/2
+            loglik -= sum(self.eta*self.s2_lambda/Lambda2[j][0:k_plus] + (self.eta+2)*np.log(Lambda2[j][0:k_plus]))/2
             Sigma_t.append(Beta.dot(np.diag(Lambda2[j])).dot(Beta.transpose()) + np.diag(sigma2))
             for t in range(tau[j],tau[j+1]):
-                loglik = loglik + scipy.stats.multivariate_normal.logpdf(self.y_mat[t,:],np.zeros(n_name), Sigma_t[j])
+                loglik = loglik + scipy.stats.multivariate_normal.logpdf(self.y_mat[t,:],np.zeros(self.n_name), Sigma_t[j])
 
-        loglik = loglik + (np.log(theta1*delta0*np.exp(-delta0*abs(Beta[:,0:k_plus])) + 
-                                  (1-theta1)*delta1*np.exp(-delta1*abs(Beta[:,0:k_plus])))).sum()
+        loglik = loglik + (np.log(theta[1]*delta[0]*np.exp(-delta[0]*abs(Beta[:,0:k_plus])) + 
+                                  (1-theta[1])*delta[1]*np.exp(-delta[1]*abs(Beta[:,0:k_plus])))).sum()
         if k_max > k_plus:
-            loglik = loglik + (np.log(theta0*delta0*np.exp(-delta0*abs(Beta[:,k_plus:k_max])) + 
-                                  (1-theta0)*delta1*np.exp(-delta1*abs(Beta[:,k_plus:k_max])))).sum()
+            loglik = loglik + (np.log(theta[0]*delta[0]*np.exp(-delta[0]*abs(Beta[:,k_plus:k_max])) + 
+                                  (1-theta[0])*delta[1]*np.exp(-delta[1]*abs(Beta[:,k_plus:k_max])))).sum()
         return loglik
 
 
@@ -297,7 +305,7 @@ def normalize(y_mat):
 if __name__ == "__main__":
     y_mat = data_toy_simulation()
     #y_mat = np.loadtxt(open("/tmp/y_mat.csv", "rb"), delimiter=",")
-    y_mat = normalize(y_mat)
+    y_mat = utils.normalize(y_mat)
 
     model = FactorModel(y_mat, k_max=10)
 
