@@ -59,7 +59,7 @@ class FactorModel():
         self.Lambda2.append(np.ones(self.k_max))
 
         self.tau = [0, self.n_date]
-        self.k_plus = self.k_max
+        self.k_plus = 1
         self.lambda2_0 = 1
 
 
@@ -73,10 +73,11 @@ class FactorModel():
         conditional expectation: sufficient statistics of gamma
         """
         Theta_rep = self.theta[1] * np.ones((self.n_name, self.k_max))
-        #Theta_rep[:,:self.k_plus] = self.theta[1]
+        Theta_rep[:,:self.k_plus] = self.theta[1]
         tmp = np.exp(-abs(self.Beta)*(self.delta[0]-self.delta[1]))
         ratio = self.delta[0]/self.delta[1]*(1-Theta_rep)/Theta_rep*tmp
         E_Gamma = 1/(1+ratio)
+        #print(E_Gamma)
         return E_Gamma
 
 
@@ -101,6 +102,8 @@ class FactorModel():
                 E_F[t,:] = M[j].dot(Beta.transpose()).dot(Sigma_inv).dot(self.y_mat[t,:])
                 E_F2[t,:]=E_F[t,:]**2 + np.diag(M[j])
 
+        #print(E_F)
+
         M_u = scipy.linalg.sqrtm(M_sum)
         return E_F, E_F2, M_u, M_sum
 
@@ -119,6 +122,8 @@ class FactorModel():
             cpt_m = cpt.cpt_detect_PELT(eta, s2_lambda, E_F2[:,:k_plus], k_plus, self.cpt_set)
         else:
             cpt_m = cpt.cpt_detect_minseglen_PELT(eta, s2_lambda, E_F2[:,:k_plus], k_plus, self.minseglen)
+
+        print(cpt_m)
 
         Q1_list = []
         for k_star in range(1, k_max+1):
@@ -139,14 +144,18 @@ class FactorModel():
 
             Q1_list.append(Q1)
 
+        #print(Q1_list)
         k_plus = np.argmax(Q1_list)+1
+        print(k_plus)
 
         lambda2_m = []
 
         for j in range(len(cpt_m)-1):
             lambda2_m.append((eta*s2_lambda+E_F2[cpt_m[j]:cpt_m[j+1],:k_plus].sum(axis=0))/(eta+2+cpt_m[j+1]-cpt_m[j]))
 
-        lambda2_0 = (eta*s2_lambda+E_F2[:,k_plus:k_max].sum())/(eta+2+E_F2[:,k_plus:k_max].size)
+        #print(E_F2[:,k_star:k_max].sum())
+        lambda2_0 = (eta*s2_lambda+E_F2[:,k_star:k_max].sum())/(eta+2+E_F2[:,k_star:k_max].size)
+        #print(lambda2_0)
 
         Lambda2 = []
         for j in range(len(cpt_m)-1):
@@ -156,6 +165,7 @@ class FactorModel():
         self.k_plus = k_plus
         self.Lambda2 = Lambda2
         self.lambda2_0 = lambda2_0
+        #print(self.Lambda2)
 
 
     def _m_step_q2(self, E_F, M_u, M_sum, E_Gamma, PXL=False):
@@ -188,9 +198,12 @@ class FactorModel():
 
             # sum of square of residuls
             SSR = sum((tilde_Y[:,j]-tilde_F.dot(Beta[j,:]))**2)
+            #print(SSR)
 
-            # update 
+            # update
             self.sigma2[j]=(SSR+xi*self.s2_sigma)/(n_date+xi+2)
+
+        #print(self.sigma2)
 
         if PXL:
             # lower triangular
@@ -307,38 +320,20 @@ if __name__ == "__main__":
     #y_mat = np.loadtxt(open("/tmp/y_mat.csv", "rb"), delimiter=",")
     y_mat = utils.normalize(y_mat)
 
-    model = FactorModel(y_mat, k_max=10)
+    model = FactorModel(y_mat, k_max=20)
 
     model.cpt_config()
     model.param_init()
 
-    model.em_iterator(200, True)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.em_iterator(200, False)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.delta0_reconfig(10)
-    model.em_iterator(200, True)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.em_iterator(200, False)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.delta0_reconfig(20)
-    model.em_iterator(200, True)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.em_iterator(200, False)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.delta0_reconfig(50)
-    model.em_iterator(200, True)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
-    model.em_iterator(200, False)
-    print(model.k_plus)
-    print(model.Beta[:,:model.k_plus])
+    delta0_steps = [1,5,10,20]
 
+    for delta0 in delta0_steps:
+        model.delta0_reconfig(delta0)
+        model.em_iterator(200, True)
+        print(model.k_plus)
+        print(model.Beta[:,:model.k_plus])
+        model.em_iterator(200, False)
+        print(model.k_plus)
+        print(model.Beta[:,:model.k_plus])
 
 

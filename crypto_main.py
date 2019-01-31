@@ -18,11 +18,13 @@ if __name__ == '__main__':
     for i in range(y_mat.shape[1]):
         y_mat[:,i] = utils.GARCH_normalize(y_mat[:,i])
     y_mat = solver.normalize(y_mat)
+    print(y_mat)
 
     model = solver.FactorModel(y_mat, k_max=20)
 
     model.cpt_config(subsetting=True)
     model.param_init()
+    #model.Beta = np.loadtxt(open("Beta_init.csv", "rb"), delimiter=",") # for debug
 
     nstep = 200
     for delta0 in [1, 2, 5, 10, 20, 50]:
