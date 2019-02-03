@@ -1,7 +1,10 @@
 import argparse
 import numpy as np
 import solver
-import utils
+import lib.utils
+import random
+
+random.seed(1)
 
 parser = argparse.ArgumentParser(description='Unsupervised learning\
                                     on crypto price time series data')

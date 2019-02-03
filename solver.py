@@ -6,9 +6,9 @@ import scipy.stats
 import math
 import sklearn
 from sklearn import linear_model
-import cpt_functions as cpt
+import lib.cpt_functions as cpt
 import copy
-import utils
+import lib.utils
 
 # idea on refactoring this piece of code
 # a class centered around y_mat
