@@ -234,6 +234,20 @@ class FactorModel():
             if i > nstep/5 and (self.Beta-Beta_old).max()<0.0001:
                 break
 
+    def final_rescale(self)
+        '''return rescaled Beta and Lambda2'''
+
+        Lambda_ts = np.tile(self.Lambda2[0],(self.tau[1]-self.tau[0],1))
+        if len(self.tau)>2:
+            for j in range(1,len(self.tau)-1):
+                Lambda_tile = np.tile(self.Lambda2[j],(self.tau[j+1]-self.tau[j],1))
+                Lambda_ts = np.concatenate((Lambda_ts,Lambda_tile),axis=0)
+
+        lambda2_mean = Lambda_ts.mean(axis=0)
+        Lambda_ts = Lambda_ts/lambda2_mean
+        Beta = self.Beta*np.sqrt(lambda2_mean)
+        return Beta, Lambda_ts
+
 
     def log_likelihood(self):
         """ Evaluate likelihood"""

@@ -51,3 +51,9 @@ if __name__ == '__main__':
     print(model.k_plus)
     print(model.Beta)
 
+    Beta, Lambda_ts = model.final_rescale()
+
+    np.savetxt('/output/crypto/Beta.csv', Beta, delimiter=',')
+    np.savetxt('/output/crypto/Lambda_ts.csv', Lambda_ts, delimiter=',')
+    np.savetxt('/output/crypto/tau.csv', model.tau, delimieter=',')
+    np.savetxt('/output/crypto/sigma2.csv', model.sigma2, delimieter=',')
