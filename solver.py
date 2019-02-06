@@ -10,7 +10,6 @@ import lib.cpt_functions as cpt
 import copy
 import lib.utils
 
-# idea on refactoring this piece of code
 # a class centered around y_mat
 # initialize the set of parameters in constructor
 # config hyper-parameters
@@ -77,7 +76,7 @@ class FactorModel():
         tmp = np.exp(-abs(self.Beta)*(self.delta[0]-self.delta[1]))
         ratio = self.delta[0]/self.delta[1]*(1-Theta_rep)/Theta_rep*tmp
         E_Gamma = 1/(1+ratio)
-        #print(E_Gamma)
+
         return E_Gamma
 
 
@@ -101,8 +100,6 @@ class FactorModel():
             for t in range(tau[j],tau[j+1]):
                 E_F[t,:] = M[j].dot(Beta.transpose()).dot(Sigma_inv).dot(self.y_mat[t,:])
                 E_F2[t,:]=E_F[t,:]**2 + np.diag(M[j])
-
-        #print(E_F)
 
         M_u = scipy.linalg.sqrtm(M_sum)
         return E_F, E_F2, M_u, M_sum
@@ -144,7 +141,6 @@ class FactorModel():
 
             Q1_list.append(Q1)
 
-        #print(Q1_list)
         k_plus = np.argmax(Q1_list)+1
         print(k_plus)
 
@@ -153,9 +149,7 @@ class FactorModel():
         for j in range(len(cpt_m)-1):
             lambda2_m.append((eta*s2_lambda+E_F2[cpt_m[j]:cpt_m[j+1],:k_plus].sum(axis=0))/(eta+2+cpt_m[j+1]-cpt_m[j]))
 
-        #print(E_F2[:,k_star:k_max].sum())
         lambda2_0 = (eta*s2_lambda+E_F2[:,k_star:k_max].sum())/(eta+2+E_F2[:,k_star:k_max].size)
-        #print(lambda2_0)
 
         Lambda2 = []
         for j in range(len(cpt_m)-1):
@@ -165,7 +159,6 @@ class FactorModel():
         self.k_plus = k_plus
         self.Lambda2 = Lambda2
         self.lambda2_0 = lambda2_0
-        #print(self.Lambda2)
 
 
     def _m_step_q2(self, E_F, M_u, M_sum, E_Gamma, PXL=False):
@@ -198,7 +191,6 @@ class FactorModel():
 
             # sum of square of residuls
             SSR = sum((tilde_Y[:,j]-tilde_F.dot(Beta[j,:]))**2)
-            #print(SSR)
 
             # update
             self.sigma2[j]=(SSR+xi*self.s2_sigma)/(n_date+xi+2)
@@ -216,8 +208,6 @@ class FactorModel():
 
         for j in range(len(self.tau)-1):
             self.Lambda2[j] = self.Lambda2[j][order]
-        #print(self.Beta[0])
-        #print(self.Lambda2)
 
 
     def em_iterator(self, nstep, PXL):
@@ -234,7 +224,7 @@ class FactorModel():
             if i > nstep/5 and (self.Beta-Beta_old).max()<0.0001:
                 break
 
-    def final_rescale(self)
+    def final_rescale(self):
         '''return rescaled Beta and Lambda2'''
 
         Lambda_ts = np.tile(self.Lambda2[0],(self.tau[1]-self.tau[0],1))
@@ -302,7 +292,7 @@ def data_toy_simulation():
     for k in range(n_factor):
         B_mat[(block_size-overlap_size)*k:block_size*(k+1)-overlap_size*k,k] = 1 + np.random.randn(block_size)/10
 
-    # segments 
+    # segments
     n_segment = 4
     tau_true = [0, 50, 80, 100, 150]
     n_date = 150
@@ -321,9 +311,6 @@ def data_toy_simulation():
 
     return y_mat
 
-
-## PXL-EM
-## parameters and initialization
 
 def normalize(y_mat):
     return  (y_mat-y_mat.mean(axis=0))/y_mat.std(axis=0)

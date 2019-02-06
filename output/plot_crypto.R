@@ -2,7 +2,7 @@ library(reshape)
 library(ggplot2)
 
 retMat=read.csv('../data/crypto_return_usd.csv')
-rownames(retMat) = retMat$X
+rownames(retMat) = retMat$date
 retMat = retMat[,-1]
 
 in.dir = './crypto/'
@@ -14,9 +14,10 @@ rownames(Beta) = colnames(retMat)
 #Beta$id = rownames(Beta)
 
 melted_beta <- melt(as.matrix(abs(Beta)))
+colnames(melted_beta) = c('Ticker', 'Factor', 'value')
 
 pdf(paste0(out.dir, "Beta_crypto.pdf"), width= 12, height = 4)
-p <- ggplot(data = melted_beta, aes(x=Var1, y=Var2, fill=value)) + 
+p <- ggplot(data = melted_beta, aes(x=Ticker, y=Factor, fill=value)) + 
   theme_bw() + geom_tile() + scale_fill_gradient(low="white", high="royalblue") + 
   xlab('') + ylab('') + scale_x_discrete(expand = c(0, 0), position = "top") + 
   scale_y_reverse(expand = c(0, 0)) + 

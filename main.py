@@ -1,14 +1,15 @@
 import argparse
 import numpy as np
 import solver
-import lib.utils
+from lib.utils import GARCH_normalize
 import random
 
 random.seed(1)
 
 parser = argparse.ArgumentParser(description='Unsupervised learning\
-                                    on crypto price time series data')
+                                    on multivariate time series data')
 parser.add_argument('data', metavar='.csv', help='time series data file')
+parser.add_argument('-out', help='output directory')
 
 args = parser.parse_args()
 
@@ -18,8 +19,10 @@ if __name__ == '__main__':
         ncols = len(f.readline().split(','))
 
     y_mat = np.loadtxt(open(args.data, 'rb'), delimiter=',', skiprows=1, usecols=range(1,ncols))
+
+    # preprocess with garch model
     for i in range(y_mat.shape[1]):
-        y_mat[:,i] = utils.GARCH_normalize(y_mat[:,i])
+        y_mat[:,i] = GARCH_normalize(y_mat[:,i])
     y_mat = solver.normalize(y_mat)
     print(y_mat)
 
@@ -35,25 +38,12 @@ if __name__ == '__main__':
         for PXL in [True, False]:
             model.em_iterator(nstep, PXL)
             #print(model.log_likelihood())
-            print(model.tau)
-            print(model.k_plus)
-            print(model.Beta)
 
-    model.em_iterator(500, False)
-    #print(model.log_likelihood())
-    print(model.tau)
-    print(model.k_plus)
-    print(model.Beta)
-
-    model.em_iterator(500, False)
-    #print(model.log_likelihood())
-    print(model.tau)
-    print(model.k_plus)
-    print(model.Beta)
+    model.em_iterator(1000, False)
 
     Beta, Lambda_ts = model.final_rescale()
 
-    np.savetxt('/output/crypto/Beta.csv', Beta, delimiter=',')
-    np.savetxt('/output/crypto/Lambda_ts.csv', Lambda_ts, delimiter=',')
-    np.savetxt('/output/crypto/tau.csv', model.tau, delimieter=',')
-    np.savetxt('/output/crypto/sigma2.csv', model.sigma2, delimieter=',')
+    np.savetxt(args.out+'Beta.csv', Beta, delimiter=',')
+    np.savetxt(args.out+'Lambda_ts.csv', Lambda_ts, delimiter=',')
+    np.savetxt(args.out+'tau.csv', model.tau, delimiter=',')
+    np.savetxt(args.out+'sigma2.csv', model.sigma2, delimiter=',')
